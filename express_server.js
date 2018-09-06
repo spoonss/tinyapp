@@ -2,9 +2,9 @@ var express = require("express");
 var app = express();
 var PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
-
+var cookieParser = require("cookie-parser");
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
-
 app.set("view engine", "ejs");
 
 var urlDatabase = {
@@ -12,35 +12,56 @@ var urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
-  res.render("urls_index", templateVars);
+// Login Username - cookie
+app.post('/login', (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
 });
 
+// List of URLs
+app.get('/urls', (req, res) => {
+  //console.log(req.cookies["username"]);
+  let templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
+  res.render('urls_index', templateVars);
+});
+
+
+
 // Create new URL
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+app.get('/urls/new', (req, res) => {
+  let templateVars = {username: req.cookies["username"]};
+  res.render('urls_new', templateVars);
 });
 
 // Short URL's Homepage
-app.get("/urls/:id", (req, res) => {
-  let templateVars = { shortURL: req.params.id, longURL: urlDatabase[req.params.id]};
-  res.render("urls_show", templateVars);
+app.get('/urls/:id', (req, res) => {
+  let templateVars = { shortURL: req.params.id, 
+    longURL: urlDatabase[req.params.id],
+    username: req.cookies["username"]};
+  res.render('urls_show', templateVars);
 });
 
 // Update URL
-app.post("/urls/:id/update", (req, res) => {
+app.post('/urls/:id/update', (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect("/urls");
+  res.redirect('/urls');
+});
+
+// Logout 
+app.post('/logout', (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
 });
 
 
-
-app.post("/urls", (req, res) => {
+app.post('/urls', (req, res) => {
   let newShortURL = generateRandomString();
   urlDatabase[newShortURL] = req.body.longURL;
   //let templateVars = { shortURL: newShortURL, longURL: urlDatabase[newShortURL]};
-  res.redirect("/urls/" + newShortURL);
+  res.redirect('/urls/' + newShortURL);
 });
 
 
@@ -51,6 +72,7 @@ app.post('/urls/:id/delete', (req, res) => {
   res.redirect('/urls');
 });
 
+// Redirect Short URL
 app.get("/u/:shortURL", (req, res) => {
   let longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
@@ -82,4 +104,3 @@ function generateRandomString() {
 	}
 	return randomstring;
 }
-
