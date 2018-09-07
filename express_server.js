@@ -16,6 +16,9 @@ var urlDatabase = {
 };
 
 
+
+
+
 // Users Database
 const users = { 
   "userRandomID": {
@@ -66,14 +69,11 @@ app.get('/urls', (req, res) => {
   if(req.cookies["user_id"] === undefined){
     res.redirect('/login');
   } else {
-
-  console.log(req.cookies["user_id"]);
   let templateVars = {
     urls: urlDatabase,
     user: users[req.cookies["user_id"]],
     loggedIn: req.cookies["user_id"]
   };
-  console.log(templateVars);
   res.render('urls_index', templateVars);
   }
 });
@@ -102,7 +102,6 @@ app.get('/urls/:id', (req, res) => {
   if(req.cookies["user_id"] === undefined){
     res.redirect('/login');
   } else {
-
   let templateVars = { 
     shortURL: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
@@ -126,7 +125,8 @@ app.post('/logout', (req, res) => {
 // New URL button
 app.post('/urls', (req, res) => {
   let newShortURL = generateRandomString();
-  urlDatabase[newShortURL] = req.body.longURL;
+  urlDatabase[newShortURL] = {longURL: req.body["longURL"], userID: req.cookies["user_id"]};
+   // "77999K": {longURL: "http://www.nhl.com", userID: "vancity"}
   res.redirect('/urls/' + newShortURL);
 });
 
