@@ -2,15 +2,17 @@
 
 TinyApp is a full stack web application built with Node and Express that allows users to shorten long URLs.
 
+First time user requires to register using their email address. User also has the ability to add a new URL or modify the existing URL.
+
 ## Final Product
 
-###### URLs page
+### URLs page
 !["Screenshot of URLs page"](https://github.com/spoonss/tinyapp/blob/master/docs/urls-page.png)
 
-###### Register page
+### Register page
 !["Screenshot of register page"](https://github.com/spoonss/tinyapp/blob/master/docs/register-page.png)
 
-###### URLs Update page
+### URLs Update page
 !["Screenshot of URLs Update page"](https://github.com/spoonss/tinyapp/blob/master/docs/update-url-page.png)
 
 
