@@ -4,13 +4,15 @@
   <title>Tiny App</title>
 </head>
 <body>
-    <h2>Tiny App</h2>
+    <h1><i>Tiny App</i></h1>
 
       <% if(user){ %>
-        <h1><%= user.email %></h1>
-        <form action="/logout" method="POST" >
+        <div>
+          <h3>User: <%= user.email %></h3>
+          <form action="/logout" method="POST" >
           <input type="submit" value="Logout">
-      </form>
+          </form>
+        </div> 
       <% } else{ %>
         <span><a href="register">Registration page</a></span>
         <span><a href="login">Login</a></span>
