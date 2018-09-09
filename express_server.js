@@ -1,11 +1,21 @@
-var express = require("express");
-var app = express();
-var PORT = 8080; // default port 8080
+const express = require("express");
+const app = express();
+const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
-var cookieParser = require("cookie-parser");
+const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
+const bcrypt = require('bcrypt');
+const cookieSession = require('cookie-session');
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1'],
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
+
 
 // URLs Database
 var urlDatabase = {
@@ -14,9 +24,6 @@ var urlDatabase = {
   "8d999K": {longURL: "http://www.nba.com", userID: "vancity"},
   "77999K": {longURL: "http://www.nhl.com", userID: "vancity"}
 };
-
-
-
 
 
 // Users Database
@@ -39,40 +46,31 @@ const users = {
   "vancity": {
     id: "vancity", 
     email: "nok@shaw.ca", 
-    password: "abc"
+    password: "$2b$10$RTdun821BJWkfs59H9UJb.S1ZwcwdOMtVwTCpTzk5LIZ88QgdnJj6"
   }
-}
+};
 
 
-// Login Username - cookie
+// Login page
 app.post('/login', (req, res) => {
-  var valid = false;
-  for (var user in users){
-    if(users[user].email === req.body.email){
-      if(users[user].password === req.body.password){
-        valid = true;
-        res.cookie('user_id', users[user].id);
-        res.redirect('/urls');
-      }
-    }
-  }
-  
-  if(!valid){
-    res.status(403).send('Wrong credentials!')
-  }
-
+  if(checkEmailAndPassword(req)){
+    res.redirect('/urls');
+  } else {
+    res.status(403).send('Wrong credentials!');
+}
 });
+
+
 
 // List of URLs
 app.get('/urls', (req, res) => {
-
-  if(req.cookies["user_id"] === undefined){
+  if(req.session.user_id === undefined){
     res.redirect('/login');
   } else {
   let templateVars = {
     urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
-    loggedIn: req.cookies["user_id"]
+    user: users[req.session.user_id],
+    loggedIn: req.session.user_id
   };
   res.render('urls_index', templateVars);
   }
@@ -81,10 +79,10 @@ app.get('/urls', (req, res) => {
 
 // Create new URL page
 app.get('/urls/new', (req, res) => {
-  if(req.cookies["user_id"] === undefined){
+  if(req.session.user_id === undefined){
     res.redirect('/login');
   } else {
-    let templateVars = { user: users[req.cookies["user_id"]]};
+    let templateVars = { user: users[req.session.user_id]};
     res.render("urls_new", templateVars);
   }
 });
@@ -92,21 +90,21 @@ app.get('/urls/new', (req, res) => {
 
 // Login page
 app.get('/login', (req, res) => {
-  let templateVars = { user: users[req.cookies["user_id"]] };
+  let templateVars = { user: users[req.session.user_id] };
   res.render('urls_login', templateVars);
 });
 
 
 // Short URL's Homepage
 app.get('/urls/:id', (req, res) => {
-  if(req.cookies["user_id"] === undefined){
+  if(req.session.user_id === undefined){
     res.redirect('/login');
   } else {
-  let templateVars = { 
-    shortURL: req.params.id,
-    longURL: urlDatabase[req.params.id].longURL,
-    user: users[req.cookies["user_id"]]};
-  res.render('urls_show', templateVars);
+      let templateVars = { 
+      shortURL: req.params.id,
+      longURL: urlDatabase[req.params.id].longURL,
+      user: users[req.session.user_id]};
+      res.render('urls_show', templateVars);
   }
 });
 
@@ -116,25 +114,26 @@ app.post('/urls/:id/update', (req, res) => {
   res.redirect('/urls');
 });
 
+
 // Logout 
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('/urls');
 });
+
 
 // New URL button
 app.post('/urls', (req, res) => {
   let newShortURL = generateRandomString();
-  urlDatabase[newShortURL] = {longURL: req.body["longURL"], userID: req.cookies["user_id"]};
-   // "77999K": {longURL: "http://www.nhl.com", userID: "vancity"}
+  urlDatabase[newShortURL] = {longURL: req.body["longURL"], userID: req.session.user_id};
   res.redirect('/urls/' + newShortURL);
 });
 
 
-// POST -- Delete URL button
+// Delete URL button
 app.post('/urls/:id/delete', (req, res) => {
   let targetId = req.params.id;
-      delete urlDatabase[targetId];
+  delete urlDatabase[targetId];
   res.redirect('/urls');
 });
 
@@ -146,30 +145,26 @@ app.get("/u/:shortURL", (req, res) => {
 
 // Registration Page  
 app.get("/register", (req, res) => {
-  let templateVars = {user: users[req.cookies["user_id"]]};
+  let templateVars = {user: users[req.session.user_id]};
   res.render('urls_register', templateVars);
 });
 
+
 // Register button
 app.post('/register', (req, res) => {
-
-  valid = false;
   if(req.body.password === '' || req.body.email === '') {
     res.status(400).send('Email and password are not allowed to be blank!');
-    } else { 
-      
-      for (var userId in users) {
-          if(users[userId].email === req.body.email){
-            res.status(400).send('Email address already existed!');
-          }
-      }
+  }
+    else if(checkEmail(req.body.email)){
+      res.status(400).send('Email address already existed!');
     }
-      let randomId = generateRandomString();
-      users[randomId] = {id: randomId, email: req.body.email, password: req.body.password};
-      //console.log(users);
-      res.cookie('user_id', randomId); 
-      res.redirect('/urls');
-    
+      else{
+        let randomId = generateRandomString();
+        let hash = bcrypt.hashSync(req.body.password, 10);
+        users[randomId] = {id: randomId, email: req.body.email, password: hash};
+        req.session.user_id = randomId; 
+        res.redirect('/urls');
+    }  
 });
 
 
@@ -177,7 +172,6 @@ app.post('/register', (req, res) => {
 app.get('/', (req, res) => {
   res.redirect('/urls');
 });
-
 
 
 
@@ -198,5 +192,24 @@ function generateRandomString() {
 	return randomstring;
 }
 
+//Function to check email address
+function checkEmail(arg){
+  for (var userId in users){
+    if(users[userId].email === arg){
+      return true;
+    }
+  } return false;
+}
+
+
+//Function to check email address & password
+function checkEmailAndPassword(arg){
+  for (var user in users){
+    if(users[user].email === arg.body.email && bcrypt.compareSync(arg.body.password, users[user].password)){
+      arg.session.user_id = users[user].id; 
+      return true;
+    } 
+  }return false; 
+}
 
 

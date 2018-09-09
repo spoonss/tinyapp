@@ -12,7 +12,7 @@
         
         <% for (let key in urls) { %>
             <% if (urls[key].userID === loggedIn){ %>
-            <li><%= key %> --> <%= urls[key].longURL%>
+            <li>Short URL: <a href ="<%= key %>"><%= key %></a> ---> <a href ="<%= urls[key].longURL%>"><%= urls[key].longURL%></a>
                 <span></span><form action="/urls/<%= key %>">
                     <input type="submit" value="Edit" />
                 </form></span>

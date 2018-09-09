@@ -7,8 +7,11 @@
     <header>
         <% include ./partials/_header.ejs %>
     </header>
-    <h1>Short URL</h1>
-    <%= shortURL%> + <%=longURL%>
+    <h2>Short URL Added!</h2>
+    Short URL: <a href ="/u/<%= shortURL%>""><%= shortURL%></a>
+    <p></p>
+    Long URL: <a href ="<%=longURL%>"><%= longURL%></a>
+    <h4><a href="/urls/">Link to Homepage</a></h4>
 
     <form action="/urls/<%= shortURL%>/update" method="POST" style="margin:150px;">
         <label for="longURL">Enter a new URL:</label>
